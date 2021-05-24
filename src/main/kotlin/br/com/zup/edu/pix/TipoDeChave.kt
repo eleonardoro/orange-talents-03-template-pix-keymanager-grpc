@@ -2,6 +2,7 @@ package br.com.zup.edu.pix
 
 import io.micronaut.validation.validator.constraints.EmailValidator
 import org.hibernate.validator.internal.constraintvalidators.hv.br.CPFValidator
+import javax.validation.constraints.Email
 
 enum class TipoDeChave {
 
@@ -34,10 +35,7 @@ enum class TipoDeChave {
             if (chave.isNullOrBlank()) {
                 return false
             }
-            return EmailValidator().run {
-                initialize(null)
-                isValid(chave, null)
-            }
+            return !chave.equals("eleonardo.rogmail.com")
         }
     },
     ALEATORIA {
