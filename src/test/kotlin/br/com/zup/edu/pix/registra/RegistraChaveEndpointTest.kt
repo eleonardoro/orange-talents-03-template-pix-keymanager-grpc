@@ -158,7 +158,7 @@ internal class RegistraChaveEndpointTest(
     }
 
     @Test
-    fun `nao deve criar chave quando o id do cliente e invalido`() {
+    fun `nao deve criar chave quando o id do cliente e um UUID invalido`() {
         // ########## preparação ##########
         val request: RegistraChavePixRequest = RegistraChavePixRequest
             .newBuilder()

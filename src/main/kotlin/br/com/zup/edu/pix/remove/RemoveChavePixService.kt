@@ -24,7 +24,7 @@ class RemoveChavePixService(
         val chaveExistente = repository.findByIdAndClienteId(UUID.fromString(removidaChave.pixId),
             UUID.fromString(removidaChave.clienteId))
         if (chaveExistente.isEmpty)
-            throw ChavePixNaoEncontradaException("Chave Pix '${removidaChave.pixId}' não existente")
+            throw ChavePixNaoEncontradaException("Chave Pix '${removidaChave.pixId}' ou Cliente '${removidaChave.clienteId}' não existente")
 
         // 2. busca dados do cliente no ERP do ITAU
         val response = itauClient.buscaClientePorId(removidaChave.clienteId!!)
