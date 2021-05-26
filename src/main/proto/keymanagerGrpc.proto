@@ -5,7 +5,6 @@ option java_outer_classname = "KeymanagerGrpc";
 
 package br.com.zup.edu.grpc;
 
-
 service KeymanagerRegistraGrpcService {
     rpc registra(RegistraChavePixRequest) returns (RegistraChavePixResponse) {}
 }

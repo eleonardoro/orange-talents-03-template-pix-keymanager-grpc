@@ -2,10 +2,11 @@ package br.com.zup.edu.pix.remove
 
 import br.com.zup.edu.grpc.KeymanagerRemoveGrpcServiceGrpc
 import br.com.zup.edu.grpc.RemoveChavePixRequest
-import br.com.zup.edu.integration.itau.ContasDeClientesNoItauClient
-import br.com.zup.edu.integration.itau.DadosDoClienteResponse
-import br.com.zup.edu.integration.itau.InstituicaoResponse
+import br.com.zup.edu.integration.itau.cliente.ClientesNoItauClient
+import br.com.zup.edu.integration.itau.cliente.DadosDoClienteResponse
+import br.com.zup.edu.integration.itau.modelos.InstituicaoResponse
 import br.com.zup.edu.pix.*
+import br.com.zup.edu.pix.modelos.*
 import io.grpc.Channel
 import io.grpc.Status
 import io.grpc.StatusRuntimeException
@@ -28,41 +29,29 @@ internal class RemoveChaveEndpointTest(
 ) {
 
     @Inject
-    lateinit var itauClient: ContasDeClientesNoItauClient
+    lateinit var itauClient: ClientesNoItauClient
 
-    companion object {
-        val CLIENTE_ID: UUID = UUID.randomUUID()
-        var PIX_ID: UUID = UUID.randomUUID()
-        val TIPO_CHAVE = TipoDeChave.CPF
-        val TIPO_CONTA = TipoDeConta.CONTA_CORRENTE
-        const val CLIENTE_NOME = "Eleonardo Oliveira"
-        const val CLIENTE_CPF = "40825844045"
-        const val CLIENTE_AGENCIA = "0001"
-        const val CLIENTE_CONTA = "0002"
-        const val INSTITUICAO_NOME = "ITAU"
-        const val INSTITUICAO_ISPB = "ITAU"
-    }
+    private lateinit var CHAVE_EXISTENTE: ChavePix
 
     @BeforeEach
     internal fun setup() {
         repository.deleteAll()
 
         val chavePix = ChavePix(
-            CLIENTE_ID,
-            TIPO_CHAVE,
-            CLIENTE_CPF,
-            TIPO_CONTA,
+            UUID.randomUUID(),
+            TipoDeChave.CPF,
+            "40825844045",
+            TipoDeConta.CONTA_CORRENTE,
             ContaAssociada(
-                InstituicaoResponse(INSTITUICAO_NOME, INSTITUICAO_ISPB).toString(),
-                CLIENTE_NOME,
-                CLIENTE_CPF,
-                CLIENTE_AGENCIA,
-                CLIENTE_CONTA
+                InstituicaoResponse("ITAU", "ITAU").toString(),
+                "Eleonardo Oliveira",
+                "40825844045",
+                "0001",
+                "0002"
             )
         )
 
-        repository.save(chavePix)
-        PIX_ID = chavePix.id!!
+        CHAVE_EXISTENTE = repository.save(chavePix)
     }
 
     @AfterEach
@@ -73,14 +62,14 @@ internal class RemoveChaveEndpointTest(
     @Test
     fun `deve remover chave quando passar dados corretos`() {
         //preparação
-        Mockito.`when`(itauClient.buscaClientePorId(clienteId = CLIENTE_ID.toString()))
+        Mockito.`when`(itauClient.buscaClientePorId(clienteId = CHAVE_EXISTENTE.clienteId.toString()))
             .thenReturn(HttpResponse.ok(dadosDoClienteResponse()))
 
         //ação e validação
         Assertions.assertEquals(1, repository.findAll().size)
 
-        grpcClient.remove(RemoveChavePixRequest.newBuilder().setPixId(PIX_ID.toString())
-            .setClienteId(CLIENTE_ID.toString()).build())
+        grpcClient.remove(RemoveChavePixRequest.newBuilder().setPixId(CHAVE_EXISTENTE.id.toString())
+            .setClienteId(CHAVE_EXISTENTE.clienteId.toString()).build())
 
         Assertions.assertEquals(0, repository.findAll().size)
     }
@@ -91,7 +80,7 @@ internal class RemoveChaveEndpointTest(
         val request: RemoveChavePixRequest = RemoveChavePixRequest
             .newBuilder()
             .setClienteId("aaaaaaaaaa")
-            .setPixId(PIX_ID.toString())
+            .setPixId(CHAVE_EXISTENTE.id.toString())
             .build()
 
         //ação e validação
@@ -114,7 +103,7 @@ internal class RemoveChaveEndpointTest(
         // ########## preparação ##########
         val request: RemoveChavePixRequest = RemoveChavePixRequest
             .newBuilder()
-            .setClienteId(CLIENTE_ID.toString())
+            .setClienteId(CHAVE_EXISTENTE.clienteId.toString())
             .setPixId("aaaaaaaaaa")
             .build()
 
@@ -136,14 +125,14 @@ internal class RemoveChaveEndpointTest(
     @Test
     fun `nao deve remover chave quando passar id da chave que nao existe`() {
         //preparação
-        Mockito.`when`(itauClient.buscaClientePorId(clienteId = CLIENTE_ID.toString()))
+        Mockito.`when`(itauClient.buscaClientePorId(clienteId = CHAVE_EXISTENTE.clienteId.toString()))
             .thenReturn(HttpResponse.ok(dadosDoClienteResponse()))
 
         val uuid = UUID.randomUUID().toString()
 
         val request: RemoveChavePixRequest = RemoveChavePixRequest
             .newBuilder()
-            .setClienteId(CLIENTE_ID.toString())
+            .setClienteId(CHAVE_EXISTENTE.clienteId.toString())
             .setPixId(uuid)
             .build()
 
@@ -158,14 +147,15 @@ internal class RemoveChaveEndpointTest(
 
         with(error) {
             Assertions.assertEquals(Status.NOT_FOUND.code, status.code)
-            Assertions.assertEquals("Chave Pix '$uuid' ou Cliente '${CLIENTE_ID.toString()}' não existente", status.description)
+            Assertions.assertEquals("Chave Pix '$uuid' ou Cliente '${CHAVE_EXISTENTE.clienteId}' não existente",
+                status.description)
         }
     }
 
     @Test
     fun `nao deve excluir chave quando passar id de cliente que nao existe`() {
         //preparação
-        Mockito.`when`(itauClient.buscaClientePorId(clienteId = CLIENTE_ID.toString()))
+        Mockito.`when`(itauClient.buscaClientePorId(clienteId = CHAVE_EXISTENTE.clienteId.toString()))
             .thenReturn(HttpResponse.ok(dadosDoClienteResponse()))
 
         val uuid = UUID.randomUUID().toString()
@@ -173,7 +163,7 @@ internal class RemoveChaveEndpointTest(
         val request: RemoveChavePixRequest = RemoveChavePixRequest
             .newBuilder()
             .setClienteId(uuid)
-            .setPixId(PIX_ID.toString())
+            .setPixId(CHAVE_EXISTENTE.id.toString())
             .build()
 
         //ação e validação
@@ -187,7 +177,8 @@ internal class RemoveChaveEndpointTest(
 
         with(error) {
             Assertions.assertEquals(Status.NOT_FOUND.code, status.code)
-            Assertions.assertEquals("Chave Pix '${PIX_ID.toString()}' ou Cliente '$uuid' não existente", status.description)
+            Assertions.assertEquals("Chave Pix '${CHAVE_EXISTENTE.id.toString()}' ou Cliente '$uuid' não existente",
+                status.description)
         }
     }
 
@@ -226,19 +217,19 @@ internal class RemoveChaveEndpointTest(
         }
     }
 
-    private fun dadosDoClienteResponse(): DadosDoClienteResponse? {
+    private fun dadosDoClienteResponse(): DadosDoClienteResponse {
         return DadosDoClienteResponse(
-            CLIENTE_ID.toString(),
-            CLIENTE_NOME,
-            CLIENTE_CPF,
-            InstituicaoResponse(INSTITUICAO_NOME, INSTITUICAO_ISPB)
+            CHAVE_EXISTENTE.clienteId.toString(),
+            "Eleonardo",
+            "40825844045",
+            InstituicaoResponse("ITAU", "ITAU")
         )
 
     }
 
-    @MockBean(ContasDeClientesNoItauClient::class)
-    fun itauClient(): ContasDeClientesNoItauClient? {
-        return Mockito.mock(ContasDeClientesNoItauClient::class.java)
+    @MockBean(ClientesNoItauClient::class)
+    fun itauClient(): ClientesNoItauClient? {
+        return Mockito.mock(ClientesNoItauClient::class.java)
     }
 
     @Factory

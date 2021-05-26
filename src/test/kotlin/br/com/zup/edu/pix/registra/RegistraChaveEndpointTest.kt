@@ -4,12 +4,12 @@ import br.com.zup.edu.grpc.KeymanagerRegistraGrpcServiceGrpc
 import br.com.zup.edu.grpc.RegistraChavePixRequest
 import br.com.zup.edu.grpc.TipoDeChave
 import br.com.zup.edu.grpc.TipoDeConta
-import br.com.zup.edu.integration.itau.ContasDeClientesNoItauClient
-import br.com.zup.edu.integration.itau.DadosDaContaResponse
-import br.com.zup.edu.integration.itau.InstituicaoResponse
-import br.com.zup.edu.integration.itau.TitularResponse
-import br.com.zup.edu.pix.ChavePixRepository
-import br.com.zup.edu.pix.ContaAssociada
+import br.com.zup.edu.integration.itau.cliente.ClientesNoItauClient
+import br.com.zup.edu.integration.itau.conta.DadosDaContaResponse
+import br.com.zup.edu.integration.itau.modelos.InstituicaoResponse
+import br.com.zup.edu.integration.itau.modelos.TitularResponse
+import br.com.zup.edu.pix.modelos.ChavePixRepository
+import br.com.zup.edu.pix.modelos.ContaAssociada
 import io.grpc.Channel
 import io.grpc.Status
 import io.grpc.StatusRuntimeException
@@ -37,7 +37,7 @@ internal class RegistraChaveEndpointTest(
 ) {
 
     @Inject
-    lateinit var itauClient: ContasDeClientesNoItauClient
+    lateinit var itauClient: ClientesNoItauClient
 
     companion object {
         val CLIENTE_ID: UUID = UUID.randomUUID()
@@ -412,9 +412,9 @@ internal class RegistraChaveEndpointTest(
         )
     }
 
-    @MockBean(ContasDeClientesNoItauClient::class)
-    fun itauClient(): ContasDeClientesNoItauClient? {
-        return Mockito.mock(ContasDeClientesNoItauClient::class.java)
+    @MockBean(ClientesNoItauClient::class)
+    fun itauClient(): ClientesNoItauClient? {
+        return Mockito.mock(ClientesNoItauClient::class.java)
     }
 
     @Factory

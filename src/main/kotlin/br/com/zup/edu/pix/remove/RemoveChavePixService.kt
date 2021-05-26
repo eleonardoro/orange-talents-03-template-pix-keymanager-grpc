@@ -1,8 +1,12 @@
 package br.com.zup.edu.pix.remove
 
-import br.com.zup.edu.integration.itau.ContasDeClientesNoItauClient
-import br.com.zup.edu.pix.ChavePixNaoEncontradaException
-import br.com.zup.edu.pix.ChavePixRepository
+import br.com.zup.edu.integration.bcb.remove.RemoveChaveBCBRequest
+import br.com.zup.edu.integration.bcb.remove.RemoveDeChavesNoBCBClient
+import br.com.zup.edu.integration.itau.cliente.ClientesNoItauClient
+import br.com.zup.edu.shared.exceptions.ChavePixNaoEncontradaException
+import br.com.zup.edu.pix.modelos.ChavePixRepository
+import io.grpc.Status.NOT_FOUND
+import io.grpc.Status.PERMISSION_DENIED
 import io.micronaut.validation.Validated
 import java.util.*
 import javax.inject.Inject
@@ -14,7 +18,8 @@ import javax.validation.Valid
 @Singleton
 class RemoveChavePixService(
     @Inject val repository: ChavePixRepository,
-    @Inject val itauClient: ContasDeClientesNoItauClient,
+    @Inject val itauClient: ClientesNoItauClient,
+    @Inject val bcbClient: RemoveDeChavesNoBCBClient,
 ) {
 
     @Transactional
@@ -22,15 +27,29 @@ class RemoveChavePixService(
 
         // 1. verifica se chave já existe no sistema
         val chaveExistente = repository.findByIdAndClienteId(UUID.fromString(removidaChave.pixId),
-            UUID.fromString(removidaChave.clienteId))
-        if (chaveExistente.isEmpty)
-            throw ChavePixNaoEncontradaException("Chave Pix '${removidaChave.pixId}' ou Cliente '${removidaChave.clienteId}' não existente")
+            UUID.fromString(removidaChave.clienteId)).orElseThrow {
+            ChavePixNaoEncontradaException("Chave Pix '${removidaChave.pixId}' ou Cliente '${removidaChave.clienteId}' não existente")
+        }
 
         // 2. busca dados do cliente no ERP do ITAU
         val response = itauClient.buscaClientePorId(removidaChave.clienteId!!)
         val conta = response.body() ?: throw IllegalStateException("Cliente não encontrado no Itau")
 
-        // 3. remove no banco de dados
-        repository.delete(chaveExistente.get())
+        // 3. Remove do BCB
+        val removeChaveBCBRequest = RemoveChaveBCBRequest(
+            chaveExistente.chave,
+            conta.instituicao.ispb
+        )
+
+        val responseBcb = bcbClient.removeChave(chaveExistente.chave, removeChaveBCBRequest)
+
+        if (responseBcb.status.toString() == NOT_FOUND.code.toString())
+            throw IllegalStateException("Chave não encontrada")
+
+        if (responseBcb.status.toString() == PERMISSION_DENIED.code.toString())
+            throw IllegalStateException("Operação não permitida")
+
+        // 4. remove no banco de dados
+        repository.delete(chaveExistente)
     }
 }

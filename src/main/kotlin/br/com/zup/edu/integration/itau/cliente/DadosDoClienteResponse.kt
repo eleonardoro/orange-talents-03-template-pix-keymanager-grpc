@@ -1,4 +1,6 @@
-package br.com.zup.edu.integration.itau
+package br.com.zup.edu.integration.itau.cliente
+
+import br.com.zup.edu.integration.itau.modelos.InstituicaoResponse
 
 
 data class DadosDoClienteResponse(

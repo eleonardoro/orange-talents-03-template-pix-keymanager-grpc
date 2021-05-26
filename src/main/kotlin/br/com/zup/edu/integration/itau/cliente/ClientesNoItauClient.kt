@@ -1,18 +1,13 @@
-package br.com.zup.edu.integration.itau
+package br.com.zup.edu.integration.itau.cliente
 
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.annotation.Get
 import io.micronaut.http.annotation.PathVariable
-import io.micronaut.http.annotation.QueryValue
 import io.micronaut.http.client.annotation.Client
 
 @Client("\${itau.contas.url}")
-interface ContasDeClientesNoItauClient {
-
-    @Get("/api/v1/clientes/{clienteId}/contas{?tipo}")
-    fun buscaContaPorTipo(@PathVariable clienteId: String, @QueryValue tipo: String): HttpResponse<DadosDaContaResponse>
+interface ClientesNoItauClient {
 
     @Get("/api/v1/clientes/{clienteId}")
     fun buscaClientePorId(@PathVariable clienteId: String): HttpResponse<DadosDoClienteResponse>
-
 }

@@ -1,6 +1,6 @@
 package br.com.zup.edu.shared.grpc.handlers
 
-import br.com.zup.edu.pix.ChavePixNaoEncontradaException
+import br.com.zup.edu.shared.exceptions.ChavePixNaoEncontradaException
 import br.com.zup.edu.shared.grpc.ExceptionHandler
 import br.com.zup.edu.shared.grpc.ExceptionHandler.*
 import io.grpc.Status

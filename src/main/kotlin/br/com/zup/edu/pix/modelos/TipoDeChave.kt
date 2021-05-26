@@ -1,8 +1,7 @@
-package br.com.zup.edu.pix
+package br.com.zup.edu.pix.modelos
 
-import io.micronaut.validation.validator.constraints.EmailValidator
+import br.com.zup.edu.integration.bcb.modelos.TipoDeChaveBCB
 import org.hibernate.validator.internal.constraintvalidators.hv.br.CPFValidator
-import javax.validation.constraints.Email
 
 enum class TipoDeChave {
 
@@ -43,4 +42,13 @@ enum class TipoDeChave {
     };
 
     abstract fun valida(chave: String?): Boolean
+
+    fun mapToTipoDeChaveBCB(): TipoDeChaveBCB {
+        return when (this) {
+            CPF -> TipoDeChaveBCB.CPF
+            CELULAR -> TipoDeChaveBCB.PHONE
+            EMAIL -> TipoDeChaveBCB.EMAIL
+            else -> TipoDeChaveBCB.RANDOM
+        }
+    }
 }

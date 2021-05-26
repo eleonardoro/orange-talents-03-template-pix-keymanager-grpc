@@ -1,6 +1,8 @@
-package br.com.zup.edu.integration.itau
+package br.com.zup.edu.integration.itau.conta
 
-import br.com.zup.edu.pix.ContaAssociada
+import br.com.zup.edu.integration.itau.modelos.InstituicaoResponse
+import br.com.zup.edu.integration.itau.modelos.TitularResponse
+import br.com.zup.edu.pix.modelos.ContaAssociada
 
 
 data class DadosDaContaResponse(

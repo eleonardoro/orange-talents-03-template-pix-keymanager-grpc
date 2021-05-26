@@ -1,4 +1,4 @@
-package br.com.zup.edu.pix
+package br.com.zup.edu.pix.modelos
 
 import javax.persistence.Column
 import javax.persistence.Embeddable

@@ -32,11 +32,11 @@ class ValidPixKeyValidator: javax.validation.ConstraintValidator<ValidPixKey, No
     override fun isValid(value: NovaChavePix?, context: javax.validation.ConstraintValidatorContext): Boolean {
 
         // must be validated with @NotNull
-        if (value?.tipo == null) {
+        if (value?.tipoDeChave == null) {
             return true
         }
 
-        val valid = value.tipo.valida(value.chave)
+        val valid = value.tipoDeChave.valida(value.chave)
         if (!valid) {
             // https://docs.jboss.org/hibernate/stable/validator/reference/en-US/html_single/#section-custom-property-paths
             context.disableDefaultConstraintViolation()
@@ -67,11 +67,11 @@ class ValidPixKeyValidatorUsingMicronautSupport: ConstraintValidator<ValidPixKey
     ): Boolean {
 
         // must be validated with @NotNull
-        if (value?.tipo == null) {
+        if (value?.tipoDeChave == null) {
             return true
         }
 
-        return value.tipo.valida(value.chave)
+        return value.tipoDeChave.valida(value.chave)
     }
 
 }

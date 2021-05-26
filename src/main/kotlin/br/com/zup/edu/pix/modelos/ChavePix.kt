@@ -1,4 +1,4 @@
-package br.com.zup.edu.pix
+package br.com.zup.edu.pix.modelos
 
 import java.time.LocalDateTime
 import java.util.*
@@ -13,25 +13,25 @@ import javax.validation.constraints.NotNull
         columnNames = ["chave"]
 )])
 class ChavePix(
-        @field:NotNull
+    @field:NotNull
         @Column(nullable = false)
         val clienteId: UUID,
 
-        @field:NotNull
+    @field:NotNull
         @Enumerated(EnumType.STRING)
         @Column(nullable = false)
-        val tipo: TipoDeChave,
+        val tipoDeChave: TipoDeChave,
 
-        @field:NotBlank
+    @field:NotBlank
         @Column(unique = true, nullable = false)
         var chave: String,
 
-        @field:NotNull
+    @field:NotNull
         @Enumerated(EnumType.STRING)
         @Column(nullable = false)
         val tipoDeConta: TipoDeConta,
 
-        @field:Valid
+    @field:Valid
         @Embedded
         val conta: ContaAssociada
 ) {
@@ -43,7 +43,7 @@ class ChavePix(
         val criadaEm: LocalDateTime = LocalDateTime.now()
 
         override fun toString(): String {
-                return "ChavePix(clienteId=$clienteId, tipo=$tipo, chave='$chave', tipoDeConta=$tipoDeConta, conta=$conta, id=$id, criadaEm=$criadaEm)"
+                return "ChavePix(clienteId=$clienteId, tipo=$tipoDeChave, chave='$chave', tipoDeConta=$tipoDeConta, conta=$conta, id=$id, criadaEm=$criadaEm)"
         }
 
         /**
@@ -55,7 +55,7 @@ class ChavePix(
          * Verifica se é chave uma aleatória
          */
         fun isAleatoria(): Boolean {
-                return tipo == TipoDeChave.ALEATORIA
+                return tipoDeChave == TipoDeChave.ALEATORIA
         }
 
         /**

@@ -10,22 +10,20 @@ import javax.inject.Singleton
 
 @ErrorHandler
 @Singleton
-class RegistraChaveEndpoint(@Inject private val service: NovaChavePixService,)
-    : KeymanagerRegistraGrpcServiceGrpc.KeymanagerRegistraGrpcServiceImplBase() {
+class RegistraChaveEndpoint(@Inject private val service: NovaChavePixService) :
+    KeymanagerRegistraGrpcServiceGrpc.KeymanagerRegistraGrpcServiceImplBase() {
 
     override fun registra(
         request: RegistraChavePixRequest,
-        responseObserver: StreamObserver<RegistraChavePixResponse>
+        responseObserver: StreamObserver<RegistraChavePixResponse>,
     ) {
-
         val novaChave = request.toModel()
         val chaveCriada = service.registra(novaChave)
 
         responseObserver.onNext(RegistraChavePixResponse.newBuilder()
-                                    .setClienteId(chaveCriada.clienteId.toString())
-                                    .setPixId(chaveCriada.id.toString())
-                                    .build())
+            .setClienteId(chaveCriada.clienteId.toString())
+            .setPixId(chaveCriada.id.toString())
+            .build())
         responseObserver.onCompleted()
     }
-
 }
