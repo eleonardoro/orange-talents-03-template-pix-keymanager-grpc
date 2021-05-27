@@ -1,7 +1,7 @@
 package br.com.zup.edu.pix.remove
 
 import br.com.zup.edu.integration.bcb.remove.RemoveChaveBCBRequest
-import br.com.zup.edu.integration.bcb.remove.RemoveDeChavesNoBCBClient
+import br.com.zup.edu.integration.bcb.remove.RemoveChavesNoBCBClient
 import br.com.zup.edu.integration.itau.cliente.ClientesNoItauClient
 import br.com.zup.edu.shared.exceptions.ChavePixNaoEncontradaException
 import br.com.zup.edu.pix.modelos.ChavePixRepository
@@ -19,7 +19,7 @@ import javax.validation.Valid
 class RemoveChavePixService(
     @Inject val repository: ChavePixRepository,
     @Inject val itauClient: ClientesNoItauClient,
-    @Inject val bcbClient: RemoveDeChavesNoBCBClient,
+    @Inject val bcbClient: RemoveChavesNoBCBClient,
 ) {
 
     @Transactional
@@ -35,7 +35,7 @@ class RemoveChavePixService(
         val response = itauClient.buscaClientePorId(removidaChave.clienteId!!)
         val conta = response.body() ?: throw IllegalStateException("Cliente não encontrado no Itau")
 
-        // 3. Remove do BCB
+        // 3. remove do BCB
         val removeChaveBCBRequest = RemoveChaveBCBRequest(
             chaveExistente.chave,
             conta.instituicao.ispb
@@ -46,7 +46,7 @@ class RemoveChavePixService(
         if (responseBcb.status.toString() == NOT_FOUND.code.toString())
             throw IllegalStateException("Chave não encontrada")
 
-        if (responseBcb.status.toString() == PERMISSION_DENIED.code.toString())
+        if (responseBcb.status.toString() == "FORBIDDEN")
             throw IllegalStateException("Operação não permitida")
 
         // 4. remove no banco de dados

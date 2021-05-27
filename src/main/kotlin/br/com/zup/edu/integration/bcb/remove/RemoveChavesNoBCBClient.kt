@@ -8,7 +8,7 @@ import io.micronaut.http.annotation.PathVariable
 import io.micronaut.http.client.annotation.Client
 
 @Client("\${bcb.pix.url}")
-interface RemoveDeChavesNoBCBClient {
+interface RemoveChavesNoBCBClient {
 
     @Delete(value = "/api/v1/pix/keys/{key}", produces = [MediaType.APPLICATION_XML])
     fun removeChave(@PathVariable key: String, @Body body: RemoveChaveBCBRequest): HttpResponse<RemoveChaveBCBResponse>

@@ -6,12 +6,15 @@ import br.com.zup.edu.integration.bcb.modelos.BankAccount
 import br.com.zup.edu.integration.bcb.modelos.ISPBMap
 import br.com.zup.edu.integration.bcb.modelos.Owner
 import br.com.zup.edu.integration.itau.cliente.ClientesNoItauClient
+import br.com.zup.edu.integration.itau.conta.ContasNoItauClient
 import br.com.zup.edu.pix.modelos.ChavePix
 import br.com.zup.edu.shared.exceptions.ChavePixExistenteException
 import br.com.zup.edu.pix.modelos.ChavePixRepository
 import br.com.zup.edu.pix.modelos.TipoDeChave
 import io.grpc.Status
+import io.micronaut.http.HttpStatus
 import io.micronaut.validation.Validated
+import io.netty.handler.codec.http.HttpResponseStatus.UNPROCESSABLE_ENTITY
 import org.slf4j.LoggerFactory
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -22,11 +25,9 @@ import javax.validation.Valid
 @Singleton
 class NovaChavePixService(
     @Inject val repository: ChavePixRepository,
-    @Inject val itauClient: ClientesNoItauClient,
+    @Inject val itauClient: ContasNoItauClient,
     @Inject val bcbClient: CadastroDeChavesNoBCBClient,
 ) {
-
-    private val LOGGER = LoggerFactory.getLogger(this::class.java)
 
     @Transactional
     fun registra(@Valid novaChave: NovaChavePix): ChavePix {
@@ -39,7 +40,7 @@ class NovaChavePixService(
         val responseItau = itauClient.buscaContaPorTipo(novaChave.clienteId!!, novaChave.tipoDeConta!!.name)
         val conta = responseItau.body()?.toModel() ?: throw IllegalStateException("Cliente não encontrado no Itau")
 
-        // 3. grava no banco do brasil
+        // 3. grava no BCB
         val bankAccount = BankAccount(
             ISPBMap.ispbs[conta.instituicao]!!,
             conta.agencia,
@@ -60,7 +61,7 @@ class NovaChavePixService(
 
         val responseBcb = bcbClient.cadastraChave(cadastraChaveBCBRequest)
 
-        if (responseBcb.status.equals(Status.ALREADY_EXISTS))
+        if (responseBcb.status.equals(HttpStatus.UNPROCESSABLE_ENTITY))
             throw IllegalStateException("Chave já cadastrada no Banco Central do Brasil")
 
         // 4. grava no banco de dados

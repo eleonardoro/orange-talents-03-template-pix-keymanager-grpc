@@ -4,7 +4,14 @@ import br.com.zup.edu.grpc.KeymanagerRegistraGrpcServiceGrpc
 import br.com.zup.edu.grpc.RegistraChavePixRequest
 import br.com.zup.edu.grpc.TipoDeChave
 import br.com.zup.edu.grpc.TipoDeConta
-import br.com.zup.edu.integration.itau.cliente.ClientesNoItauClient
+import br.com.zup.edu.integration.bcb.cadastra.CadastraChaveBCBRequest
+import br.com.zup.edu.integration.bcb.cadastra.CadastraChaveBCBResponse
+import br.com.zup.edu.integration.bcb.cadastra.CadastroDeChavesNoBCBClient
+import br.com.zup.edu.integration.bcb.modelos.BankAccount
+import br.com.zup.edu.integration.bcb.modelos.ISPBMap
+import br.com.zup.edu.integration.bcb.modelos.Owner
+import br.com.zup.edu.integration.bcb.modelos.TipoDeChaveBCB
+import br.com.zup.edu.integration.itau.conta.ContasNoItauClient
 import br.com.zup.edu.integration.itau.conta.DadosDaContaResponse
 import br.com.zup.edu.integration.itau.modelos.InstituicaoResponse
 import br.com.zup.edu.integration.itau.modelos.TitularResponse
@@ -17,6 +24,7 @@ import io.micronaut.context.annotation.Factory
 import io.micronaut.grpc.annotation.GrpcChannel
 import io.micronaut.grpc.server.GrpcServerChannel
 import io.micronaut.http.HttpResponse
+import io.micronaut.http.HttpStatus
 import io.micronaut.test.annotation.MockBean
 import io.micronaut.test.extensions.junit5.annotation.MicronautTest
 import org.junit.jupiter.api.AfterEach
@@ -29,6 +37,7 @@ import org.mockito.Mockito.`when`
 import java.util.*
 import javax.inject.Inject
 import javax.inject.Singleton
+import br.com.zup.edu.pix.modelos.TipoDeConta as TipoDeConta1
 
 @MicronautTest(transactional = false)
 internal class RegistraChaveEndpointTest(
@@ -37,7 +46,10 @@ internal class RegistraChaveEndpointTest(
 ) {
 
     @Inject
-    lateinit var itauClient: ClientesNoItauClient
+    lateinit var itauClient: ContasNoItauClient
+
+    @Inject
+    lateinit var bcbClient: CadastroDeChavesNoBCBClient
 
     companion object {
         val CLIENTE_ID: UUID = UUID.randomUUID()
@@ -60,12 +72,21 @@ internal class RegistraChaveEndpointTest(
             .newBuilder()
             .setClienteId(CLIENTE_ID.toString())
             .setTipoDeChave(TipoDeChave.CPF)
-            .setChave("02110126108")
+            .setChave("63657520325")
             .setTipoDeConta(TipoDeConta.CONTA_CORRENTE)
             .build()
 
         `when`(itauClient.buscaContaPorTipo(clienteId = CLIENTE_ID.toString(), tipo = "CONTA_CORRENTE"))
             .thenReturn(HttpResponse.ok(dadosDaContaResponse()))
+
+        `when`(bcbClient.cadastraChave(cadastraChaveBCBRequest(
+            TipoDeConta1.CONTA_CORRENTE,
+            "63657520325",
+            TipoDeChaveBCB.CPF)))
+            .thenReturn(HttpResponse.ok(cadastraChaveBCBResponse(
+                TipoDeConta1.CONTA_CORRENTE,
+                "63657520325",
+                TipoDeChaveBCB.CPF)))
 
         // ########## ação ##########
         val response = grpcClient.registra(request)
@@ -81,6 +102,82 @@ internal class RegistraChaveEndpointTest(
     }
 
     @Test
+    fun `nao deve criar chave quando ja esta cadastrada no BCB`() {
+        // ########## preparação ##########
+        val request: RegistraChavePixRequest = RegistraChavePixRequest
+            .newBuilder()
+            .setClienteId(CLIENTE_ID.toString())
+            .setTipoDeChave(TipoDeChave.CPF)
+            .setChave("63657520325")
+            .setTipoDeConta(TipoDeConta.CONTA_CORRENTE)
+            .build()
+
+        `when`(itauClient.buscaContaPorTipo(clienteId = CLIENTE_ID.toString(), tipo = "CONTA_CORRENTE"))
+            .thenReturn(HttpResponse.ok(dadosDaContaResponse()))
+
+        `when`(bcbClient.cadastraChave(cadastraChaveBCBRequest(
+            TipoDeConta1.CONTA_CORRENTE,
+            "63657520325",
+            TipoDeChaveBCB.CPF)))
+            .thenReturn(HttpResponse.status(HttpStatus.UNPROCESSABLE_ENTITY))
+
+        // ########## ação ##########
+
+        val error = assertThrows<StatusRuntimeException> {
+            grpcClient.registra(request)
+        }
+
+        with(error) {
+            assertEquals(Status.FAILED_PRECONDITION.code, status.code)
+            assertEquals("Chave já cadastrada no Banco Central do Brasil", status.description)
+        }
+    }
+
+    private fun cadastraChaveBCBRequest(
+        tipoDeConta: TipoDeConta1,
+        key: String,
+        tipoDeChave: TipoDeChaveBCB,
+    ): CadastraChaveBCBRequest {
+        return CadastraChaveBCBRequest(
+            keyType = tipoDeChave,
+            key = key,
+            bankAccount = bankAccount(tipoDeConta),
+            owner = owner()
+        )
+    }
+
+    private fun bankAccount(
+        tipoDeConta: TipoDeConta1,
+    ): BankAccount {
+        return BankAccount(
+            ISPBMap.ispbs["ITAÚ UNIBANCO S.A."]!!,
+            "1218",
+            "291900",
+            tipoDeConta.mapToTipoDeContaBCB())
+    }
+
+    private fun owner(): Owner {
+        return Owner(
+            "NATURAL_PERSON",
+            "Rafael Ponte",
+            "63657520325"
+        )
+    }
+
+    private fun cadastraChaveBCBResponse(
+        tipoDeConta: TipoDeConta1,
+        key: String,
+        tipoDeChave: TipoDeChaveBCB,
+    ): CadastraChaveBCBResponse {
+        return CadastraChaveBCBResponse(
+            keyType = tipoDeChave,
+            key = key,
+            bankAccount = bankAccount(tipoDeConta),
+            owner = owner(),
+        )
+    }
+
+    @Test
     fun `deve criar chave celular`() {
         // ########## preparação ##########
         val request: RegistraChavePixRequest = RegistraChavePixRequest
@@ -93,6 +190,15 @@ internal class RegistraChaveEndpointTest(
 
         `when`(itauClient.buscaContaPorTipo(clienteId = CLIENTE_ID.toString(), tipo = "CONTA_CORRENTE"))
             .thenReturn(HttpResponse.ok(dadosDaContaResponse()))
+
+        `when`(bcbClient.cadastraChave(cadastraChaveBCBRequest(
+            TipoDeConta1.CONTA_CORRENTE,
+            "+5562996368679",
+            TipoDeChaveBCB.PHONE)))
+            .thenReturn(HttpResponse.ok(cadastraChaveBCBResponse(
+                TipoDeConta1.CONTA_CORRENTE,
+                "+5562996368679",
+                TipoDeChaveBCB.PHONE)))
 
         // ########## ação ##########
         val response = grpcClient.registra(request)
@@ -120,6 +226,15 @@ internal class RegistraChaveEndpointTest(
         `when`(itauClient.buscaContaPorTipo(clienteId = CLIENTE_ID.toString(), tipo = "CONTA_CORRENTE"))
             .thenReturn(HttpResponse.ok(dadosDaContaResponse()))
 
+        `when`(bcbClient.cadastraChave(cadastraChaveBCBRequest(
+            TipoDeConta1.CONTA_CORRENTE,
+            "eleonardo.ro@gmail.com",
+            TipoDeChaveBCB.EMAIL)))
+            .thenReturn(HttpResponse.ok(cadastraChaveBCBResponse(
+                TipoDeConta1.CONTA_CORRENTE,
+                "eleonardo.ro@gmail.com",
+                TipoDeChaveBCB.EMAIL)))
+
         // ########## ação ##########
         val response = grpcClient.registra(request)
 
@@ -144,6 +259,15 @@ internal class RegistraChaveEndpointTest(
 
         `when`(itauClient.buscaContaPorTipo(clienteId = CLIENTE_ID.toString(), tipo = "CONTA_CORRENTE"))
             .thenReturn(HttpResponse.ok(dadosDaContaResponse()))
+
+        `when`(bcbClient.cadastraChave(cadastraChaveBCBRequest(
+            TipoDeConta1.CONTA_CORRENTE,
+            "",
+            TipoDeChaveBCB.RANDOM)))
+            .thenReturn(HttpResponse.ok(cadastraChaveBCBResponse(
+                TipoDeConta1.CONTA_CORRENTE,
+                "c56dfef4-7901-44fb-84e2-a2cefb157890",
+                TipoDeChaveBCB.RANDOM)))
 
         // ########## ação ##########
         val response = grpcClient.registra(request)
@@ -290,7 +414,7 @@ internal class RegistraChaveEndpointTest(
         }
 
         // ########## validação ##########
-        with(error){
+        with(error) {
             assertEquals(Status.FAILED_PRECONDITION.code, status.code)
             assertEquals("Cliente não encontrado no Itau", status.description)
         }
@@ -382,12 +506,21 @@ internal class RegistraChaveEndpointTest(
             .newBuilder()
             .setClienteId(CLIENTE_ID.toString())
             .setTipoDeChave(TipoDeChave.CPF)
-            .setChave("02110126108")
+            .setChave("63657520325")
             .setTipoDeConta(TipoDeConta.CONTA_CORRENTE)
             .build()
 
         `when`(itauClient.buscaContaPorTipo(clienteId = CLIENTE_ID.toString(), tipo = "CONTA_CORRENTE"))
             .thenReturn(HttpResponse.ok(dadosDaContaResponse()))
+
+        `when`(bcbClient.cadastraChave(cadastraChaveBCBRequest(
+            TipoDeConta1.CONTA_CORRENTE,
+            "63657520325",
+            TipoDeChaveBCB.CPF)))
+            .thenReturn(HttpResponse.ok(cadastraChaveBCBResponse(
+                TipoDeConta1.CONTA_CORRENTE,
+                "63657520325",
+                TipoDeChaveBCB.CPF)))
 
         // ########## ação ##########
         grpcClient.registra(request)
@@ -398,23 +531,28 @@ internal class RegistraChaveEndpointTest(
         // ########## validação ##########
         with(error) {
             assertEquals(Status.ALREADY_EXISTS.code, status.code)
-            assertEquals("Chave Pix '02110126108' existente", status.description)
+            assertEquals("Chave Pix '63657520325' existente", status.description)
         }
     }
 
     private fun dadosDaContaResponse(): DadosDaContaResponse {
         return DadosDaContaResponse(
             tipo = "CONTA_CORRENTE",
-            instituicao = InstituicaoResponse("UNIBANCO ITAU SA", ContaAssociada.ITAU_UNIBANCO_ISPB),
+            instituicao = InstituicaoResponse("ITAÚ UNIBANCO S.A.", ContaAssociada.ITAU_UNIBANCO_ISPB),
             agencia = "1218",
             numero = "291900",
             titular = TitularResponse("Rafael Ponte", "63657520325")
         )
     }
 
-    @MockBean(ClientesNoItauClient::class)
-    fun itauClient(): ClientesNoItauClient? {
-        return Mockito.mock(ClientesNoItauClient::class.java)
+    @MockBean(ContasNoItauClient::class)
+    fun itauClient(): ContasNoItauClient? {
+        return Mockito.mock(ContasNoItauClient::class.java)
+    }
+
+    @MockBean(CadastroDeChavesNoBCBClient::class)
+    fun bcbClient(): CadastroDeChavesNoBCBClient? {
+        return Mockito.mock(CadastroDeChavesNoBCBClient::class.java)
     }
 
     @Factory
