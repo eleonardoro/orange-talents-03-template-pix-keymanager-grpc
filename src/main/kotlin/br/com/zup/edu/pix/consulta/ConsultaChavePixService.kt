@@ -56,7 +56,7 @@ class ConsultaChavePixService(
             val responseBcb = bcbClient.consultaChave(request.chavePix.toString())
 
             if (responseBcb.status.equals(HttpStatus.NOT_FOUND))
-                throw IllegalStateException("Chave não registrada no BCB")
+                throw IllegalStateException("Chave não registrada")
 
             with(responseBcb.body()) {
                 val contaVinculada = ConsultaChavePixResponse.ContaVinculada
