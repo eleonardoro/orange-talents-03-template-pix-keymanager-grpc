@@ -150,7 +150,7 @@ internal class RegistraChaveEndpointTest(
         tipoDeConta: TipoDeConta1,
     ): BankAccount {
         return BankAccount(
-            ISPBMap.ispbs["ITAÚ UNIBANCO S.A."]!!,
+            ISPBMap.ispbsPorNome["ITAÚ UNIBANCO S.A."]!!,
             "1218",
             "291900",
             tipoDeConta.mapToTipoDeContaBCB())

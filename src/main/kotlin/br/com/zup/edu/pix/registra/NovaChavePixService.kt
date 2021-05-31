@@ -5,17 +5,13 @@ import br.com.zup.edu.integration.bcb.cadastra.CadastroDeChavesNoBCBClient
 import br.com.zup.edu.integration.bcb.modelos.BankAccount
 import br.com.zup.edu.integration.bcb.modelos.ISPBMap
 import br.com.zup.edu.integration.bcb.modelos.Owner
-import br.com.zup.edu.integration.itau.cliente.ClientesNoItauClient
 import br.com.zup.edu.integration.itau.conta.ContasNoItauClient
 import br.com.zup.edu.pix.modelos.ChavePix
 import br.com.zup.edu.shared.exceptions.ChavePixExistenteException
 import br.com.zup.edu.pix.modelos.ChavePixRepository
 import br.com.zup.edu.pix.modelos.TipoDeChave
-import io.grpc.Status
 import io.micronaut.http.HttpStatus
 import io.micronaut.validation.Validated
-import io.netty.handler.codec.http.HttpResponseStatus.UNPROCESSABLE_ENTITY
-import org.slf4j.LoggerFactory
 import javax.inject.Inject
 import javax.inject.Singleton
 import javax.transaction.Transactional
@@ -42,7 +38,7 @@ class NovaChavePixService(
 
         // 3. grava no BCB
         val bankAccount = BankAccount(
-            ISPBMap.ispbs[conta.instituicao]!!,
+            ISPBMap.ispbsPorNome[conta.instituicao]!!,
             conta.agencia,
             conta.numeroDaConta,
             novaChave.tipoDeConta.mapToTipoDeContaBCB())

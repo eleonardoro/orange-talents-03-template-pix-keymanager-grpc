@@ -4,6 +4,7 @@ option java_multiple_files = true;
 option java_outer_classname = "KeymanagerGrpc";
 
 package br.com.zup.edu.grpc;
+import "google/protobuf/timestamp.proto";
 
 service KeymanagerRegistraGrpcService {
     rpc registra(RegistraChavePixRequest) returns (RegistraChavePixResponse) {}
@@ -13,12 +14,18 @@ service KeymanagerRemoveGrpcService {
     rpc remove(RemoveChavePixRequest) returns (RemoveChavePixResponse) {}
 }
 
+service KeymanagerConsultaGrpcService {
+    rpc consulta(ConsultaChavePixRequest) returns (ConsultaChavePixResponse) {}
+    rpc consultaExterna(ConsultaExternaChavePixRequest) returns (ConsultaChavePixResponse) {}
+}
+
 enum TipoDeChave {
     UNKNOWN_TIPO_CHAVE = 0;
     CPF = 1;
     CELULAR = 2;
     EMAIL = 3;
     ALEATORIA = 4;
+    CNPJ = 5;
 }
 
 enum TipoDeConta {
@@ -54,3 +61,36 @@ message RemoveChavePixResponse {
     string pixId = 1;
     string clienteId = 2;
 }
+
+/**
+ * Consulta chave
+ */
+message ConsultaChavePixRequest {
+    string pixId = 1;
+    string clienteId = 2;
+}
+
+message ConsultaExternaChavePixRequest {
+    string chavePix = 1;
+}
+
+message ConsultaChavePixResponse {
+    string pixId = 1;
+    string clienteId = 2;
+    TipoDeChave tipoDeChave = 3;
+    string chave = 4;
+    string nomeDoTitular = 5;
+    string cpfDoTitular = 6;
+    message ContaVinculada {
+        string nomeInstituicao = 1;
+        string agencia = 2;
+        string conta = 3;
+        TipoDeConta tipoDeConta = 4;
+    }
+    repeated ContaVinculada contaVinculada = 7;
+    google.protobuf.Timestamp dataCriacao = 8;
+}
+
+//        jackson:
+//        serialization:
+//        writeDatesAsTimestamps: false
