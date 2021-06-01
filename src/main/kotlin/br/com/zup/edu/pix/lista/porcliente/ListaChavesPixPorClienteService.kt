@@ -19,7 +19,6 @@ import javax.validation.Valid
 @Singleton
 class ListaChavesPixPorClienteService(
     @Inject val repository: ChavePixRepository,
-    @Inject val bcbClient: ConsultaDeChavesNoBCBClient,
 ) {
 
     @Transactional
