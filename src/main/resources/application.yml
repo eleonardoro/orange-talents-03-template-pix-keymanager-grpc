@@ -8,6 +8,8 @@ grpc:
     keep-alive-time: 1h
     max-inbound-message-size: 1024
 
+#jackson.serialization.writeDatesAsTimestamps: false
+
 datasources:
   default:
     url: jdbc:postgresql://localhost:5435/key-manager

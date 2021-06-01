@@ -4,6 +4,7 @@ option java_multiple_files = true;
 option java_outer_classname = "KeymanagerGrpc";
 
 package br.com.zup.edu.grpc;
+
 import "google/protobuf/timestamp.proto";
 
 service KeymanagerRegistraGrpcService {
@@ -17,6 +18,10 @@ service KeymanagerRemoveGrpcService {
 service KeymanagerConsultaGrpcService {
     rpc consulta(ConsultaChavePixRequest) returns (ConsultaChavePixResponse) {}
     rpc consultaExterna(ConsultaExternaChavePixRequest) returns (ConsultaChavePixResponse) {}
+}
+
+service KeymanagerListaPorClienteGrpcService {
+    rpc lista(ListaChavesPixPorClientePixRequest) returns (ListaChavesPixPorClienteResponse) {}
 }
 
 enum TipoDeChave {
@@ -91,6 +96,22 @@ message ConsultaChavePixResponse {
     google.protobuf.Timestamp dataCriacao = 8;
 }
 
-//        jackson:
-//        serialization:
-//        writeDatesAsTimestamps: false
+/**
+ * Lista chaves por cliente
+ */
+message ListaChavesPixPorClientePixRequest {
+    string clienteId = 1;
+}
+
+message ListaChavesPixPorClienteResponse {
+    message ChavePixCliente {
+        string pixId = 1;
+        TipoDeChave tipoDeChave = 3;
+        string chavePix = 4;
+        TipoDeConta tipoDeConta = 5;
+        google.protobuf.Timestamp dataCriacao = 6;
+    }
+
+    string clienteId = 1;
+    repeated ChavePixCliente chaves = 2;
+}
